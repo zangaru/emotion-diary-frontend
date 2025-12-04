@@ -12,9 +12,7 @@ export const useAuthStore = defineStore('auth', () => {
       token.value = data.accessToken;
       localStorage.setItem('token', data.accessToken);
 
-      // 프로필 정보 가져오기
-      const profile = await authApi.getProfile();
-      user.value = profile.data.user;
+      user.value = { id: 0, email }; // 임시로 이메일만 저장
 
       return true;
     } catch (error) {
@@ -29,24 +27,10 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('token');
   };
 
-  const checkAuth = async () => {
-    if (!token.value) return false;
-
-    try {
-      const { data } = await authApi.getProfile();
-      user.value = data.user;
-      return true;
-    } catch {
-      logout();
-      return false;
-    }
-  };
-
   return {
     user,
     token,
     login,
     logout,
-    checkAuth,
   };
 });
