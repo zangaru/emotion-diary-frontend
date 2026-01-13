@@ -21,6 +21,30 @@ const router = createRouter({
       name: 'register',
       component: () => import('@/views/RegisterView.vue'),
     },
+    {
+      path: '/diaries',
+      name: 'diaries',
+      component: () => import('@/views/diary/DiaryListView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/diaries/new',
+      name: 'diary-create',
+      component: () => import('@/views/diary/DiaryCreateView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/diaries/:id',
+      name: 'diary-detail',
+      component: () => import('@/views/diary/DiaryDetailView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/diaries/:id/edit',
+      name: 'diary-edit',
+      component: () => import('@/views/diary/DiaryEditView.vue'),
+      meta: { requiresAuth: true },
+    },
   ],
 });
 
