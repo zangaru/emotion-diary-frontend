@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { EMOTIONS, getEmotionOption } from '@/constants/emotions';
+import { getWeatherOption } from '@/constants/weather';
 import DefaultLayout from '@/layouts/DefaultLayout.vue';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -68,7 +69,7 @@ const formatDateTime = (dateString: string) => {
 onMounted(() => {
   fetchDiary();
 });
-</script>z
+</script>
 
 <template>
   <DefaultLayout>
@@ -95,10 +96,16 @@ onMounted(() => {
           <div class="flex justify-between items-start mb-4">
             <div class="flex-1">
               <span :class="[
-                'inline-block px-3 py-1 text-sm rounded-full font-medium mb-3',
+                'inline-block px-3 py-1 text-sm rounded-full font-medium mb-3 mr-2',
                 getEmotionOption(diary.emotion)?.color || 'bg-gray-100 text-gray-800',
               ]">
                 {{ getEmotionOption(diary.emotion)?.emoji }} {{ diary.emotion }}
+              </span>
+              <span :class="[
+                'inline-block px-3 py-1 text-sm rounded-full font-medium mb-3',
+                getWeatherOption(diary.weather)?.color || 'bg-gray-100 text-gray-800',
+              ]">
+                {{ getWeatherOption(diary.weather)?.emoji }} {{ getWeatherOption(diary.weather)?.label }}
               </span>
               <h1 class="text-3xl font-bold text-gray-900">{{ diary.title }}</h1>
             </div>

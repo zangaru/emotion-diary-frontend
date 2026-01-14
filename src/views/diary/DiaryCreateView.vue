@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { EMOTIONS } from '@/constants/emotions';
 import DefaultLayout from '@/layouts/DefaultLayout.vue';
@@ -9,15 +9,49 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { diaryApi } from '@/api/diary';
+import { weatherApi } from '@/api/weather';
+import { WEATHER_OPTIONS } from '@/constants/weather';
 
 const router = useRouter();
 
 const title = ref('');
 const content = ref('');
 const emotion = ref('');
+const weather = ref('');
 const diaryDate = ref(new Date().toISOString().split('T')[0]); // 오늘 날짜
 const error = ref('');
 const isLoading = ref(false);
+const isWeatherLoading = ref(false);
+
+// 위치 정보를 담을 변수
+const location = ref<{ lat: number; lon: number } | null>(null);
+
+// 페이지 로드 시 날씨 정보 자동 조회
+onMounted(async () => {
+  if ('geolocation' in navigator) {
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        location.value = {
+          lat: position.coords.latitude,
+          lon: position.coords.longitude,
+        };
+
+        try {
+          const response = await weatherApi.getCurrent(location.value.lat, location.value.lon);
+          if (response.condition) {
+            const exists = WEATHER_OPTIONS.some(opt => opt.value === response.condition);
+            weather.value = exists ? response.condition : 'Unknown';
+          }
+        } catch (err) {
+          console.error('추천 날씨 조회 실패:', err);
+        }
+      },
+      (err) => {
+        console.warn('위치 정보를 가져올 수 없습니다.', err);
+      }
+    );
+  }
+});
 
 const handleSubmit = async () => {
   error.value = '';
@@ -56,6 +90,9 @@ const handleSubmit = async () => {
       content: content.value,
       emotion: emotion.value,
       diaryDate: diaryDate.value,
+      weather: weather.value,
+      lat: location.value?.lat,
+      lon: location.value?.lon,
     });
 
     alert('일기가 저장되었습니다!');
@@ -87,10 +124,32 @@ const handleSubmit = async () => {
 
       <Card class="p-6">
         <form @submit.prevent="handleSubmit" class="space-y-6">
-          <!-- 날짜 -->
-          <div>
-            <Label for="diaryDate">날짜</Label>
-            <Input id="diaryDate" v-model="diaryDate" type="date" :disabled="isLoading" required />
+          <!-- 날짜 및 날씨 -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label for="diaryDate">날짜</Label>
+              <Input id="diaryDate" v-model="diaryDate" type="date" :disabled="isLoading" required />
+            </div>
+            <div>
+              <Label for="weather">오늘의 날씨</Label>
+              <div class="relative">
+                <select id="weather" v-model="weather"
+                  class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  :disabled="isLoading || isWeatherLoading">
+                  <option v-for="opt in WEATHER_OPTIONS" :key="opt.value" :value="opt.value">
+                    {{ opt.emoji }} {{ opt.label }}
+                  </option>
+                </select>
+                <!-- 로딩 표시 -->
+                <div v-if="isWeatherLoading" class="absolute right-8 top-2.5">
+                  <span
+                    class="flex h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"></span>
+                </div>
+              </div>
+              <p class="text-[11px] text-blue-600 mt-1" v-if="!isWeatherLoading && location">
+                ✨ 현재 위치를 기반으로 날씨가 추천되었습니다.
+              </p>
+            </div>
           </div>
 
           <!-- 제목 -->

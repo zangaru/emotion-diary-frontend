@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { diaryApi, type Diary } from '@/api/diary';
+import { WEATHER_OPTIONS } from '@/constants/weather';
 
 const router = useRouter();
 const route = useRoute();
@@ -16,6 +17,7 @@ const route = useRoute();
 const title = ref('');
 const content = ref('');
 const emotion = ref('');
+const weather = ref('');
 const diaryDate = ref('');
 const error = ref('');
 const isLoading = ref(false);
@@ -29,6 +31,7 @@ const fetchDiary = async () => {
     title.value = data.title;
     content.value = data.content;
     emotion.value = data.emotion;
+    weather.value = data.weather;
     diaryDate.value = data.diaryDate.split('T')[0]; // YYYY-MM-DD 형식으로
   } catch (err: any) {
     console.error('일기 조회 실패:', err);
@@ -75,6 +78,7 @@ const handleSubmit = async () => {
       title: title.value,
       content: content.value,
       emotion: emotion.value,
+      weather: weather.value,
       diaryDate: diaryDate.value,
     });
 
@@ -118,9 +122,23 @@ onMounted(() => {
         <Card class="p-6">
           <form @submit.prevent="handleSubmit" class="space-y-6">
             <!-- 날짜 -->
-            <div>
-              <Label for="diaryDate">날짜</Label>
-              <Input id="diaryDate" v-model="diaryDate" type="date" :disabled="isLoading" required />
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label for="diaryDate">날짜</Label>
+                <Input id="diaryDate" v-model="diaryDate" type="date" :disabled="isLoading" required />
+              </div>
+              <div>
+                <Label for="weather">오늘의 날씨</Label>
+                <div class="relative">
+                  <select id="weather" v-model="weather"
+                    class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    :disabled="isLoading">
+                    <option v-for="opt in WEATHER_OPTIONS" :key="opt.value" :value="opt.value">
+                      {{ opt.emoji }} {{ opt.label }}
+                    </option>
+                  </select>
+                </div>
+              </div>
             </div>
 
             <!-- 제목 -->

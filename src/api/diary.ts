@@ -5,6 +5,9 @@ export interface CreateDiaryDto {
   content: string;
   emotion: string;
   diaryDate: string; // YYYY-MM-DD
+  weather?: string;
+  lat?: number;
+  lon?: number;
 }
 
 export interface Diary {
@@ -13,6 +16,7 @@ export interface Diary {
   content: string;
   emotion: string;
   diaryDate: string;
+  weather: string;
   userId: number;
   createdAt: string;
   updatedAt: string;

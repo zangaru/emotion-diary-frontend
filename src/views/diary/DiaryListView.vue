@@ -3,16 +3,20 @@ import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { EMOTIONS, getEmotionOption } from '@/constants/emotions';
 import DefaultLayout from '@/layouts/DefaultLayout.vue';
+import DiaryCalendar from './DiaryCalendar.vue';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Search, X } from 'lucide-vue-next';
+import { Search, X, List, Calendar } from 'lucide-vue-next';
 import { diaryApi, type Diary } from '@/api/diary';
 
 const router = useRouter();
 const diaries = ref<Diary[]>([]);
 const isLoading = ref(false);
 const error = ref('');
+
+// 리스트 모드 (리스트형 또는 캘린더형)
+const viewMode = ref<'list' | 'calendar'>('list');
 
 // 검색 관련
 const searchKeyword = ref('');
@@ -85,7 +89,7 @@ onMounted(() => {
 
 <template>
   <DefaultLayout>
-    <div class="max-w-4xl mx-auto">
+    <div class="max-w-6xl mx-auto">
       <!-- 헤더 -->
       <div class="flex justify-between items-center mb-6">
         <div>
@@ -97,11 +101,26 @@ onMounted(() => {
             </span>
           </p>
         </div>
-        <Button @click="router.push('/diaries/new')">새 일기 쓰기</Button>
+        <div class="flex gap-2">
+          <!-- 뷰 모드 전환 버튼 -->
+          <div class="flex border rounded-lg overflow-hidden">
+            <Button variant="ghost" size="sm" :class="viewMode === 'list' ? 'bg-gray-100' : ''"
+              @click="viewMode = 'list'">
+              <List class="w-4 h-4 mr-2" />
+              리스트
+            </Button>
+            <Button variant="ghost" size="sm" :class="viewMode === 'calendar' ? 'bg-gray-100' : ''"
+              @click="viewMode = 'calendar'">
+              <Calendar class="w-4 h-4 mr-2" />
+              캘린더
+            </Button>
+          </div>
+          <Button @click="router.push('/diaries/new')">새 일기 쓰기</Button>
+        </div>
       </div>
 
-      <!-- 검색 & 필터 -->
-      <div class="mb-6 space-y-4">
+      <!-- 검색 & 필터 (리스트 모드에서만 표시) -->
+      <div v-if="viewMode === 'list'" class="mb-6 space-y-4">
         <!-- 검색창 -->
         <div class="relative">
           <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -142,38 +161,44 @@ onMounted(() => {
         <p class="text-red-600">{{ error }}</p>
       </div>
 
-      <!-- 검색 결과 없음 -->
-      <div v-else-if="filteredDiaries.length === 0 && diaries.length > 0" class="text-center py-12">
-        <p class="text-gray-600 mb-2">검색 결과가 없습니다.</p>
-        <Button variant="outline" @click="clearSearch">필터 초기화</Button>
-      </div>
+      <!-- 캘린더 뷰 -->
+      <DiaryCalendar v-else-if="viewMode === 'calendar'" :diaries="diaries" @select-diary="goToDetail" />
 
-      <!-- 일기 없음 -->
-      <div v-else-if="diaries.length === 0" class="text-center py-12">
-        <p class="text-gray-600 mb-4">아직 작성한 일기가 없습니다.</p>
-        <Button @click="router.push('/diaries/new')">첫 일기 쓰기</Button>
-      </div>
+      <!-- 리스트 뷰 -->
+      <template v-else-if="viewMode === 'list'">
+        <!-- 검색 결과 없음 -->
+        <div v-if="filteredDiaries.length === 0 && diaries.length > 0" class="text-center py-12">
+          <p class="text-gray-600 mb-2">검색 결과가 없습니다.</p>
+          <Button variant="outline" @click="clearSearch">필터 초기화</Button>
+        </div>
 
-      <!-- 일기 목록 -->
-      <div v-else class="space-y-4">
-        <Card v-for="diary in filteredDiaries" :key="diary.id"
-          class="p-6 hover:shadow-lg transition-shadow cursor-pointer" @click="goToDetail(diary.id)">
-          <div class="flex justify-between items-start mb-3">
-            <h2 class="text-xl font-bold text-gray-900">{{ diary.title }}</h2>
-            <span :class="[
-              'px-3 py-1 text-sm rounded-full font-medium whitespace-nowrap',
-              getEmotionOption(diary.emotion)?.color || 'bg-gray-100 text-gray-800',
-            ]">
-              {{ getEmotionOption(diary.emotion)?.emoji }} {{ diary.emotion }}
-            </span>
-          </div>
-          <p class="text-gray-700 mb-3 line-clamp-2">{{ diary.content }}</p>
-          <div class="flex justify-between items-center text-sm text-gray-500">
-            <span>{{ formatDate(diary.diaryDate) }}</span>
-            <span>{{ new Date(diary.createdAt).toLocaleDateString('ko-KR') }} 작성</span>
-          </div>
-        </Card>
-      </div>
+        <!-- 일기 없음 -->
+        <div v-else-if="diaries.length === 0" class="text-center py-12">
+          <p class="text-gray-600 mb-4">아직 작성한 일기가 없습니다.</p>
+          <Button @click="router.push('/diaries/new')">첫 일기 쓰기</Button>
+        </div>
+
+        <!-- 일기 목록 -->
+        <div v-else class="space-y-4">
+          <Card v-for="diary in filteredDiaries" :key="diary.id"
+            class="p-6 hover:shadow-lg transition-shadow cursor-pointer" @click="goToDetail(diary.id)">
+            <div class="flex justify-between items-start mb-3">
+              <h2 class="text-xl font-bold text-gray-900">{{ diary.title }}</h2>
+              <span :class="[
+                'px-3 py-1 text-sm rounded-full font-medium whitespace-nowrap',
+                getEmotionOption(diary.emotion)?.color || 'bg-gray-100 text-gray-800',
+              ]">
+                {{ getEmotionOption(diary.emotion)?.emoji }} {{ diary.emotion }}
+              </span>
+            </div>
+            <p class="text-gray-700 mb-3 line-clamp-2">{{ diary.content }}</p>
+            <div class="flex justify-between items-center text-sm text-gray-500">
+              <span>{{ formatDate(diary.diaryDate) }}</span>
+              <span>{{ new Date(diary.createdAt).toLocaleDateString('ko-KR') }} 작성</span>
+            </div>
+          </Card>
+        </div>
+      </template>
     </div>
   </DefaultLayout>
 </template>
