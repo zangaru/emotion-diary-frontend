@@ -4,7 +4,7 @@ export interface CreateDiaryDto {
   title: string;
   content: string;
   emotion: string;
-  diaryDate: string; // YYYY-MM-DD
+  diaryDate: string;
   weather?: string;
   lat?: number;
   lon?: number;
@@ -20,6 +20,25 @@ export interface Diary {
   userId: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface EmotionCount {
+  emotion: string;
+  count: number;
+}
+
+export interface MonthlyTrend {
+  month: string;
+  emotions: EmotionCount[];
+}
+
+export interface StatsResponse {
+  totalDiaries: number;
+  currentStreak: number;
+  thisMonthCount: number;
+  emotionCounts: EmotionCount[];
+  monthlyTrend: MonthlyTrend[];
+  mostFrequentEmotion: string | null;
 }
 
 export const diaryApi = {
@@ -46,4 +65,6 @@ export const diaryApi = {
 
   // 특정 날짜의 일기 조회
   findByDate: (date: string) => api.get<Diary[]>(`/diaries/date/${date}`),
+
+  getStats: () => api.get<StatsResponse>('/diaries/stats'),
 };

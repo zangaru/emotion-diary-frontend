@@ -32,6 +32,9 @@ const handleLogout = () => {
           <RouterLink to="/diaries/new" class="text-gray-700 hover:text-gray-900 text-sm font-medium transition-colors">
             일기 쓰기
           </RouterLink>
+          <RouterLink to="/stats" class="text-gray-700 hover:text-gray-900 text-sm font-medium transition-colors">
+            통계
+          </RouterLink>
         </nav>
 
         <!-- 사용자 정보 -->
