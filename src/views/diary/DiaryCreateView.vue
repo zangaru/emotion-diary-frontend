@@ -22,12 +22,36 @@ const diaryDate = ref(new Date().toISOString().split('T')[0]); // 오늘 날짜
 const error = ref('');
 const isLoading = ref(false);
 const isWeatherLoading = ref(false);
+const isCheckingExistingDiary = ref(false);
+
+// 오늘의 날짜 포맷팅 (고정)
+const today = new Date().toLocaleDateString('ko-KR', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+  weekday: 'long',
+});
 
 // 위치 정보를 담을 변수
 const location = ref<{ lat: number; lon: number } | null>(null);
 
 // 페이지 로드 시 날씨 정보 자동 조회
 onMounted(async () => {
+  // 오늘 날짜의 일기가 이미 존재하는지 확인
+  isCheckingExistingDiary.value = true;
+  try {
+    const response = await diaryApi.findByDate(diaryDate.value);
+    if (response.data.length > 0) {
+      alert('이미 오늘의 일기가 작성되어 있습니다. 일기 목록으로 이동합니다.');
+      router.push('/diaries');
+      return;
+    }
+  } catch (err) {
+    console.error('기존 일기 확인 실패:', err);
+  } finally {
+    isCheckingExistingDiary.value = false;
+  }
+
   if ('geolocation' in navigator) {
     navigator.geolocation.getCurrentPosition(
       async (position) => {
@@ -39,7 +63,7 @@ onMounted(async () => {
         try {
           const response = await weatherApi.getCurrent(location.value.lat, location.value.lon);
           if (response.condition) {
-            const exists = WEATHER_OPTIONS.some(opt => opt.value === response.condition);
+            const exists = WEATHER_OPTIONS.some((opt) => opt.value === response.condition);
             weather.value = exists ? response.condition : 'Unknown';
           }
         } catch (err) {
@@ -48,7 +72,7 @@ onMounted(async () => {
       },
       (err) => {
         console.warn('위치 정보를 가져올 수 없습니다.', err);
-      }
+      },
     );
   }
 });
@@ -127,8 +151,11 @@ const handleSubmit = async () => {
           <!-- 날짜 및 날씨 -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label for="diaryDate">날짜</Label>
-              <Input id="diaryDate" v-model="diaryDate" type="date" :disabled="isLoading" required />
+              <Label class="text-gray-500">작성 날짜</Label>
+              <div
+                class="h-10 flex items-center px-3 bg-gray-50 border border-gray-200 rounded-md font-semibold text-gray-700">
+                📅 {{ today }}
+              </div>
             </div>
             <div>
               <Label for="weather">오늘의 날씨</Label>
@@ -155,8 +182,8 @@ const handleSubmit = async () => {
           <!-- 제목 -->
           <div>
             <Label for="title">제목</Label>
-            <Input id="title" v-model="title" type="text" placeholder="오늘의 일기 제목을 입력하세요" :disabled="isLoading"
-              maxlength="100" required />
+            <Input id="title" v-model="title" type="text" placeholder="오늘의 일기 제목을 입력하세요"
+              :disabled="isLoading || isCheckingExistingDiary" maxlength="100" required />
             <p class="text-xs text-gray-500 mt-1">{{ title.length }}/100자</p>
           </div>
 
@@ -170,7 +197,7 @@ const handleSubmit = async () => {
                   emotion === emotionOption.value
                     ? 'border-blue-500 bg-blue-50 shadow-md'
                     : 'border-gray-200 bg-white hover:border-gray-300',
-                ]" :disabled="isLoading">
+                ]" :disabled="isLoading || isCheckingExistingDiary">
                 <div class="text-3xl mb-1">{{ emotionOption.emoji }}</div>
                 <div class="text-sm font-medium text-gray-700">{{ emotionOption.label }}</div>
               </button>
@@ -187,7 +214,7 @@ const handleSubmit = async () => {
           <div>
             <Label for="content">내용</Label>
             <Textarea id="content" v-model="content" placeholder="오늘 있었던 일이나 감정을 자유롭게 작성해주세요." rows="12"
-              :disabled="isLoading" required />
+              :disabled="isLoading || isCheckingExistingDiary" required />
           </div>
 
           <!-- 에러 메시지 -->
@@ -197,10 +224,17 @@ const handleSubmit = async () => {
 
           <!-- 버튼 -->
           <div class="flex gap-3">
-            <Button type="submit" class="flex-1" :disabled="isLoading">
-              {{ isLoading ? '저장 중...' : '저장하기' }}
+            <Button type="submit" class="flex-1" :disabled="isLoading || isCheckingExistingDiary">
+              {{
+                isLoading || isCheckingExistingDiary
+                  ? isCheckingExistingDiary
+                    ? '확인 중...'
+                    : '저장 중...'
+                  : '저장하기'
+              }}
             </Button>
-            <Button type="button" variant="outline" @click="router.push('/diaries')" :disabled="isLoading">
+            <Button type="button" variant="outline" @click="router.push('/diaries')"
+              :disabled="isLoading || isCheckingExistingDiary">
               취소
             </Button>
           </div>

@@ -43,4 +43,7 @@ export const diaryApi = {
 
   // 감정별 필터링
   filterByEmotion: (emotion: string) => api.get<Diary[]>(`/diaries/emotion/${emotion}`),
+
+  // 특정 날짜의 일기 조회
+  findByDate: (date: string) => api.get<Diary[]>(`/diaries/date/${date}`),
 };
